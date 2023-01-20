@@ -1,0 +1,6 @@
+history
+__pycache__
+.ipynb_checkpoints
+facial_landmark_detection.ipynb
+wandb
+ffhq_landmarks
