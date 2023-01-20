@@ -11,17 +11,15 @@ import numpy as np
 
 import cv2
 
-import dlib
-
 from tqdm import tqdm
 
 from random import choices
 
+from detect import detect_landmarks_dlib
 
-face_detector = dlib.get_frontal_face_detector()
-landmark_detector = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 
-def detect_landmarks(image, img_type="pil"):
+
+def to_np(image, img_type):
     if img_type == "pil":
         img = to_tensor(image.convert("RGB"))
         img = (img.permute(1, 2, 0).numpy() * 255).astype(np.uint8)
@@ -31,21 +29,35 @@ def detect_landmarks(image, img_type="pil"):
 
     elif img_type == "tensor":
         img = (img.permute(1, 2, 0).numpy() * 255).astype(np.uint8)
-        
-    gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-
-    results = []
-
-    face_coordinates = face_detector(gray_img)
     
-    for coordinate in face_coordinates:
-        landmarks = landmark_detector(img, coordinate)
-        
-        results.append(
-            torch.tensor([(landmarks.part(i).x, landmarks.part(i).y) for i in range(68)])
-        )
+    return img
 
-    return results
+
+def to_pil(image, img_type):
+    if img_type == "np":
+        img = to_pil_image(torch.from_numpy(image/255).permute(2, 0, 1))
+
+    elif img_type == "pil":
+        img = image.copy()
+
+    elif img_type == "tensor":
+        img = to_pil_image(image)
+
+    return img
+
+
+def to_tensor_image(image, img_type, device):
+    
+    if img_type == "pil":
+        img = to_tensor(image.resize((512, 512)).convert("RGB")).to(device)
+
+    elif img_type == "tensor":
+        img = image.to(device)
+    
+    elif img_type == "np":
+        img = torch.from_numpy(cv2.resize(image, dsize=(512, 512)) / 255).permute(2, 0, 1).type(torch.float32).to(device)
+    
+    return img
 
 
 def draw_landmarks(image, img_type="pil", landmarks=None):
@@ -173,7 +185,7 @@ if __name__ == '__main__':
     
     for path, img_number in tqdm(zip(ffhq_paths, img_number_list)):
         image = Image.open(path)
-        landmarks = detect_landmarks(image, img_type="pil")
+        landmarks = detect_landmarks_dlib(image, img_type="pil")
 
         if landmarks:
             landmarks = landmarks[0].view(-1).type(torch.float32)
