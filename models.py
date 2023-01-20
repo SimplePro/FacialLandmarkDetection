@@ -236,7 +236,7 @@ class Xception(nn.Module):
 if __name__ == '__main__':
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    xception = Xception(middle_repeat_n=8).to(device)
+    xception = Xception(middle_repeat_n=4).to(device)
 
     summary(xception, (3, 512, 512))
     
